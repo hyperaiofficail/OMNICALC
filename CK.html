@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Style Calculator Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ----------------------------------------------------
+           CSS: SAME MATERIAL YOU THEME
+           ---------------------------------------------------- */
+        :root {
+            --bg-color: #fdfcff;
+            --btn-num-bg: #f3f3f6;
+            --btn-num-text: #1f1f1f;
+            --btn-op-bg: #dbe6ff; 
+            --btn-op-text: #001d36;
+            --btn-eq-bg: #745b78; 
+            --btn-eq-text: #ffffff;
+            --btn-sci-bg: #e2e2e6; /* Scientific keys color */
+            --btn-sci-text: #001d36;
+            --display-text: #1b1b1f;
+            --history-bg: rgba(253, 252, 255, 0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .mobile-frame {
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+            overflow: hidden; /* To clip sliding panels */
+        }
+
+        /* --- Header --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 5px;
+            color: #44474f;
+            z-index: 20;
+        }
+        
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .icon-btn:active { background: #eee; }
+
+        /* --- Display --- */
+        .display-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            padding-bottom: 20px;
+            padding-right: 10px;
+            word-break: break-all;
+            z-index: 10;
+        }
+
+        .input-text {
+            font-size: 3.5rem;
+            color: var(--display-text);
+            font-weight: 400;
+            text-align: right;
+            transition: font-size 0.2s;
+        }
+
+        .result-preview {
+            font-size: 1.5rem;
+            color: #74777f;
+            min-height: 30px;
+            margin-bottom: 5px;
+        }
+
+        /* --- Expand Bar (< >) --- */
+        .expand-bar {
+            padding: 0 10px 15px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #44474f;
+            z-index: 15;
+        }
+        
+        .expand-btn {
+            background: var(--btn-op-bg);
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--btn-op-text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* --- Keypad Grid --- */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding-bottom: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        button {
+            border: none;
+            outline: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            border-radius: 50%;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: filter 0.2s, transform 0.1s;
+        }
+        button:active { filter: brightness(0.9); transform: scale(0.95); }
+
+        .btn-num { background-color: var(--btn-num-bg); color: var(--btn-num-text); }
+        .btn-op { background-color: var(--btn-op-bg); color: var(--btn-op-text); }
+        .btn-eq { background-color: var(--btn-eq-bg); color: var(--btn-eq-text); font-size: 2rem; }
+        .btn-sci { background-color: var(--btn-sci-bg); color: var(--btn-sci-text); font-size: 1.2rem; font-weight: 500;}
+
+        /* --- SCIENTIFIC DRAWER (Slides Up) --- */
+        .scientific-pad {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 55%; /* Covers half screen */
+            background: #eef2f6;
+            border-top-left-radius: 25px;
+            border-top-right-radius: 25px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            transform: translateY(110%); /* Hidden by default */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 25;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+        }
+        .scientific-pad.active { transform: translateY(0); }
+
+        /* --- HISTORY OVERLAY --- */
+        .history-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--history-bg);
+            z-index: 30;
+            padding: 60px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        .history-view.active { transform: translateX(0); }
+        
+        .history-header {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--btn-op-text);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 5px;
+        }
+        .hist-exp { font-size: 0.9rem; color: #777; margin-bottom: 5px; }
+        .hist-val { font-size: 1.5rem; color: var(--display-text); }
+
+        /* Backspace Icon */
+        .backspace-icon {
+            display: inline-block;
+            border: 2px solid currentColor;
+            width: 22px;
+            height: 16px;
+            position: relative;
+            border-radius: 2px;
+        }
+        .backspace-icon::before {
+            content: ''; position: absolute; left: -8px; top: 1px; width: 10px; height: 10px;
+            border-bottom: 2px solid currentColor; border-left: 2px solid currentColor; transform: rotate(45deg);
+        }
+        .backspace-icon::after { content: '×'; position: absolute; top: -4px; left: 5px; font-size: 14px; font-weight: bold; border: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="mobile-frame">
+        
+        <div class="header">
+            <button class="icon-btn" onclick="toggleHistory()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </button>
+            <button class="icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="history-view" id="historyView">
+            <div class="history-header">
+                <span>History</span>
+                <button onclick="clearHistory()" style="background:none; border:none; color: #ff5b5b; font-weight:bold; cursor:pointer;">Clear</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div style="text-align:center; color:#aaa; margin-top:50px;">No history yet</div>
+            </div>
+            <button onclick="toggleHistory()" style="margin-top:20px; padding:15px; border-radius:15px; background:var(--btn-op-bg); border:none; font-weight:bold;">Close</button>
+        </div>
+
+        <div class="display-area">
+            <div class="result-preview" id="preview"></div>
+            <div style="display:flex; align-items:center; width:100%; justify-content:flex-end;">
+                <span id="screen" class="input-text">0</span>
+                <span class="cursor" style="height:40px; width:2px; background:#aeb4c9; margin-left:5px;"></span>
+            </div>
+        </div>
+
+        <div class="expand-bar">
+            <button class="expand-btn" onclick="toggleScientific()">
+                <span style="font-size:16px; font-weight:900;">&lt; &gt;</span> 
+            </button>
+            <div style="font-size:12px; color:#aaa;">DEG</div> 
+        </div>
+
+        <div class="keypad">
+            <button class="btn-op btn-ac" onclick="clearScreen()">AC</button>
+            <button class="btn-op" onclick="insert('(')">( )</button>
+            <button class="btn-op" onclick="insert('%')">%</button>
+            <button class="btn-op" onclick="insert('/')">÷</button>
+
+            <button class="btn-num" onclick="insert('7')">7</button>
+            <button class="btn-num" onclick="insert('8')">8</button>
+            <button class="btn-num" onclick="insert('9')">9</button>
+            <button class="btn-op" onclick="insert('*')">×</button>
+
+            <button class="btn-num" onclick="insert('4')">4</button>
+            <button class="btn-num" onclick="insert('5')">5</button>
+            <button class="btn-num" onclick="insert('6')">6</button>
+            <button class="btn-op" onclick="insert('-')">−</button>
+
+            <button class="btn-num" onclick="insert('1')">1</button>
+            <button class="btn-num" onclick="insert('2')">2</button>
+            <button class="btn-num" onclick="insert('3')">3</button>
+            <button class="btn-op" onclick="insert('+')">+</button>
+
+            <button class="btn-num" onclick="insert('0')">0</button>
+            <button class="btn-num" onclick="insert('.')">.</button>
+            <button class="btn-num" onclick="backspace()"><div class="backspace-icon"></div></button>
+            <button class="btn-eq" onclick="calculate()">=</button>
+        </div>
+
+        <div class="scientific-pad" id="sciPad">
+            <div style="grid-column: span 4; display:flex; justify-content:center; margin-bottom:10px;">
+                <div style="width:40px; height:4px; background:#ccc; border-radius:10px;" onclick="toggleScientific()"></div>
+            </div>
+            
+            <button class="btn-sci" onclick="insertFunc('sin')">sin</button>
+            <button class="btn-sci" onclick="insertFunc('cos')">cos</button>
+            <button class="btn-sci" onclick="insertFunc('tan')">tan</button>
+            <button class="btn-sci" onclick="insert('3.14159')">π</button>
+
+            <button class="btn-sci" onclick="insertFunc('ln')">ln</button>
+            <button class="btn-sci" onclick="insertFunc('log')">log</button>
+            <button class="btn-sci" onclick="insert('^')">^</button>
+            <button class="btn-sci" onclick="insertFunc('sqrt')">√</button>
+
+            <button class="btn-sci" onclick="insert('(')">(</button>
+            <button class="btn-sci" onclick="insert(')')">)</button>
+            <button class="btn-sci" onclick="insert('!')">!</button>
+            <button class="btn-sci" onclick="insert('2.718')">e</button>
+
+            <button class="btn-op" style="grid-column: span 4; border-radius: 15px; width: 100%; font-size:1rem; margin-top:10px;" onclick="toggleScientific()">
+                Close
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        /* ----------------------------------------------------
+           JAVASCRIPT LOGIC
+           ---------------------------------------------------- */
+        let currentInput = "";
+        let historyData = [];
+        const screen = document.getElementById('screen');
+        const preview = document.getElementById('preview');
+        const sciPad = document.getElementById('sciPad');
+        const historyView = document.getElementById('historyView');
+        const historyList = document.getElementById('historyList');
+
+        // Toggle Views
+        function toggleScientific() {
+            sciPad.classList.toggle('active');
+        }
+
+        function toggleHistory() {
+            historyView.classList.toggle('active');
+            renderHistory();
+        }
+
+        // Logic
+        function updateDisplay() {
+            screen.innerText = currentInput === "" ? "0" : currentInput;
+            
+            // Dynamic Font Sizing
+            if(currentInput.length > 9) screen.style.fontSize = "2.5rem";
+            else if(currentInput.length > 14) screen.style.fontSize = "2rem";
+            else screen.style.fontSize = "3.5rem";
+
+            // Live Preview (Try calculating as typing)
+            try {
+                if(currentInput.length > 0) {
+                    let res = evaluateExpression(currentInput);
+                    if(!isNaN(res)) preview.innerText = res;
+                } else {
+                    preview.innerText = "";
+                }
+            } catch(e) { preview.innerText = ""; }
+        }
+
+        function insert(val) {
+            if (val === '(') {
+                // Smart bracket logic
+                const lastChar = currentInput.slice(-1);
+                if (['1','2','3','4','5','6','7','8','9','0',')'].includes(lastChar)) {
+                   val = '*(';
+                }
+            }
+            currentInput += val;
+            updateDisplay();
+        }
+
+        function insertFunc(fn) {
+            currentInput += fn + "(";
+            updateDisplay();
+        }
+
+        function clearScreen() {
+            currentInput = "";
+            preview.innerText = "";
+            updateDisplay();
+        }
+
+        function backspace() {
+            currentInput = currentInput.slice(0, -1);
+            updateDisplay();
+        }
+
+        // The Brain (Calculation)
+        function evaluateExpression(expr) {
+            // Replace visual symbols
+            let cleanExpr = expr
+                .replace(/×/g, '*')
+                .replace(/÷/g, '/')
+                .replace(/\^/g, '**')
+                .replace(/π/g, 'Math.PI')
+                .replace(/e/g, 'Math.E')
+                .replace(/sin/g, 'Math.sin')
+                .replace(/cos/g, 'Math.cos')
+                .replace(/tan/g, 'Math.tan')
+                .replace(/log/g, 'Math.log10')
+                .replace(/ln/g, 'Math.log')
+                .replace(/sqrt/g, 'Math.sqrt');
+
+            // Handle Factorial (!)
+            if(cleanExpr.includes('!')) {
+                // Simple parser for single factorial: 5!
+                let parts = cleanExpr.split('!');
+                if(parts.length > 1) {
+                    let num = parseInt(parts[0].match(/(\d+)$/)[0]);
+                    let fact = 1;
+                    for(let i=1; i<=num; i++) fact *= i;
+                    cleanExpr = cleanExpr.replace(num+'!', fact);
+                }
+            }
+            
+            // Handle Percentage
+            cleanExpr = cleanExpr.replace(/(\d+)%/g, '($1/100)');
+
+            return eval(cleanExpr);
+        }
+
+        function calculate() {
+            try {
+                let result = evaluateExpression(currentInput);
+                
+                // Format result
+                if (!Number.isInteger(result)) {
+                    result = parseFloat(result.toFixed(6));
+                }
+
+                // Save History
+                if(currentInput !== result.toString()) {
+                    historyData.unshift({ exp: currentInput, res: result });
+                }
+
+                currentInput = result.toString();
+                preview.innerText = "";
+                updateDisplay();
+            } catch (e) {
+                preview.innerText = "Error";
+            }
+        }
+
+        // History Functions
+        function renderHistory() {
+            historyList.innerHTML = "";
+            if(historyData.length === 0) {
+                historyList.innerHTML = '<div style="text-align:center; color:#aaa; margin-top:50px;">No history yet</div>';
+                return;
+            }
+            
+            historyData.forEach(item => {
+                let div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<div class="hist-exp">${item.exp}</div><div class="hist-val">= ${item.res}</div>`;
+                div.onclick = () => {
+                    currentInput = item.res.toString();
+                    updateDisplay();
+                    toggleHistory();
+                };
+                historyList.appendChild(div);
+            });
+        }
+
+        function clearHistory() {
+            historyData = [];
+            renderHistory();
+        }
+
+    </script>
+</body>
+</html>
